@@ -1,4 +1,4 @@
-import SerreNumberTheory.Formalization.Chapter01.F010101FiniteFields
+import SerreNumberTheory.Chapter01.S010101FiniteFields
 
 namespace SerreNumberTheory
 

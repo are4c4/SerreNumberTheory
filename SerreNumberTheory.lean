@@ -1,4 +1,4 @@
-import SerreNumberTheory.Formalization.Chapter01.F010101FiniteFields
-import SerreNumberTheory.Formalization.Chapter01.F010102MultiplicativeGroup
-import SerreNumberTheory.Formalization.Chapter01.F010201PowerSums
-import SerreNumberTheory.Formalization.Chapter01.F010202ChevalleyWarning
+import SerreNumberTheory.Chapter01.S010101FiniteFields
+import SerreNumberTheory.Chapter01.S010102MultiplicativeGroup
+import SerreNumberTheory.Chapter01.S010201PowerSums
+import SerreNumberTheory.Chapter01.S010202ChevalleyWarning
