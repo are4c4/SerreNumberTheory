@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lean Notion Viewer</title>
+<link rel="stylesheet" href="viewer.css?v=__ASSET_VERSION__">
+<link rel="stylesheet" href="infoview.css?v=__ASSET_VERSION__">
+<script type="module" src="viewer.mjs?v=__ASSET_VERSION__"></script>
+<script type="module" src="infoview.mjs?v=__ASSET_VERSION__"></script>
+</head>
+<body>
+<main class="viewer">
+  <header class="header">
+    <div class="heading">
+      <div id="targetRow" class="target-row" hidden>
+        <span id="targetBadge" class="target-badge"></span>
+        <span id="targetName" class="target-name"></span>
+      </div>
+      <div class="meta-grid">
+        <div class="meta-block">
+          <div class="meta-label">Lean source</div>
+          <div id="fileName" class="file-name"></div>
+        </div>
+        <div id="scopeWrap" class="meta-block scope-wrap" hidden>
+          <div class="meta-label">Scope</div>
+          <div id="scopeRow" class="scope-row"></div>
+        </div>
+      </div>
+    </div>
+    <div class="actions">
+      <button id="reloadBtn" type="button">Reload</button>
+      <button id="copyBtn" type="button" disabled>Copy</button>
+      <a id="githubBtn" class="button" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+    </div>
+  </header>
+  <div id="codeWrap" class="code-wrap"><div class="empty">Loading…</div></div>
+</main>
+</body>
+</html>
