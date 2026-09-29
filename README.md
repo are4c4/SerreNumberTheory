@@ -2,6 +2,43 @@
 
 セール『数論講義』の内容を Lean 4 で形式化するプロジェクトです．
 
-## 目的
+## 形式化の構成
+形式化した Lean ファイルは章ごとに配置しています．
 
-書籍の数学的内容と Lean による形式化を対応させ、形式化された数論を読みやすい形で共有することを目的としています．
+```text
+SerreNumberTheory/
+└── Chapter01/
+    ├── S010101FiniteFields.lean
+    ├── S010102MultiplicativeGroup.lean
+    ├── S010201PowerSums.lean
+    └── S010202ChevalleyWarning.lean
+```
+
+形式化ファイルは，書籍内での位置がわかるように番号をつけています．
+例えば，
+```text
+S 01 01 01 FiniteFields .lean
+  │  │  │
+  │  │  └─ 項目番号
+  │  └──── 節番号
+  └─────── 章番号
+```
+です．
+
+## Notion Viewer
+
+[Notion Viewer](https://are4c4.github.io/SerreNumberTheory/notion/) は，Lean の定理や定義を Notion 上で読みやすく表示するために作成した静的 Viewer です．
+
+GitHub Pages 上で公開しています．
+
+Lean のソースコードに加えて，構文ハイライト・証明状態・ goal などを表示でき，形式化した内容を Notion から参照しやすくします．
+
+例えば，「[表示例](https://are4c4.github.io/SerreNumberTheory/notion/?decl=SerreNumberTheory.field_char_is_prime_or_zero)」のように表示できます．
+
+## 関連リンク
+- [Notion Viewer](https://are4c4.github.io/SerreNumberTheory/notion/)
+- [Viewer URL生成](https://are4c4.github.io/SerreNumberTheory/notion/link/)
+- [GitHub Repository](https://github.com/are4c4/SerreNumberTheory)
+
+## 参考文献
+- J.-P. セール 著，彌永健一 訳，『数論講義』，岩波書店，オンデマンド版，2017年，ISBN 978-4-00-730592-4．
