@@ -1,0 +1,103 @@
+name: Pages (Verso & Notion)
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: ${{ github.repository }}-pages-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Pages
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Install TextMate build dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund --package-lock=false
+
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Restore Lake package cache
+        id: lake-package-cache
+        uses: actions/cache@v5
+        with:
+          path: .lake/packages
+          key: ${{ runner.os }}-lake-packages-pages-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}
+          restore-keys: |
+            ${{ runner.os }}-lake-packages-pages-
+            ${{ runner.os }}-lake-packages-notion-
+
+      - name: Restore Lean build cache
+        uses: actions/cache@v5
+        with:
+          path: .lake/build
+          key: ${{ runner.os }}-lean-build-pages-${{ hashFiles('lean-toolchain', 'lake-manifest.json', 'lakefile.lean', 'literate.toml', 'SerreNumberTheory.lean', 'SerreNumberTheory/**/*.lean', 'NotionHighlightExport.lean', 'NotionProofStatusExport.lean', 'scripts/build-notion.*') }}
+          restore-keys: |
+            ${{ runner.os }}-lean-build-pages-
+            ${{ runner.os }}-lean-build-notion-
+
+      - if: ${{ steps.lake-package-cache.outputs.cache-hit != 'true' }}
+        name: Warm mathlib cache
+        timeout-minutes: 20
+        run: |
+          if ! lake exe cache get; then
+            echo "::warning::Mathlib cache download failed; continuing with a normal build."
+          fi
+
+      - name: Test Notion Viewer helpers
+        run: |
+          python3 -m unittest discover -s tests -p "test_*.py"
+          node --test tests/notion/*.test.mjs
+
+      - name: Build Notion Viewer
+        timeout-minutes: 25
+        run: ./scripts/build-notion.sh
+
+      - name: Build Verso Literate Documentation
+        timeout-minutes: 25
+        run: lake build :literateHtml
+
+      - name: Assemble Pages distribution
+        run: |
+          LIT_PATH="$(lake query :literateHtml)"
+          mkdir -p _out/pages
+          cp -R "$LIT_PATH/." _out/pages/
+          cp -R _out/site/notion _out/pages/notion
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: _out/pages
+
+  deploy:
+    name: Deploy Pages
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
