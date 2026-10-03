@@ -264,6 +264,7 @@ def legacy_key(file: str, kind: str, name: str) -> str:
 
 def add_legacy_targets(
     legacy: dict[str, dict],
+    scope_targets: dict[str, dict],
     rel_source: str,
     module: str,
     lines: list[str],
@@ -298,7 +299,7 @@ def add_legacy_targets(
             scope = stack.pop()
             rows, plain = raw_rows(lines, scope["start"], index, semantic_by_line)
             item = {
-                "id": f"legacy:{module}:{scope['kind']}:{scope['name']}:{scope['start']}",
+                "id": f"scope:{module}:{scope['kind']}:{scope['name']}:{scope['start']}",
                 "module": module,
                 "file": rel_source,
                 "kind": scope["kind"],
@@ -310,6 +311,7 @@ def add_legacy_targets(
                 "rows": rows,
                 "plainText": plain,
             }
+            scope_targets[item["id"]] = item
             legacy.setdefault(legacy_key(rel_source, scope["kind"], scope["name"]), item)
 
     for index, line in enumerate(lines, start=1):
@@ -359,6 +361,7 @@ def main() -> int:
     short_names: dict[str, list[str]] = {}
     files: dict[str, list[str]] = {}
     legacy_targets: dict[str, dict] = {}
+    scope_targets: dict[str, dict] = {}
 
     for semantic_file in sorted(semantic_root.rglob("*.json")):
         rel_source = source_path_from_semantic(semantic_file, semantic_root)
@@ -411,7 +414,14 @@ def main() -> int:
                 declarations[name] = item_id
                 short_names.setdefault(name.rsplit(".", 1)[-1], []).append(item_id)
 
-        add_legacy_targets(legacy_targets, rel_source_text, module, lines, raw_items)
+        add_legacy_targets(
+            legacy_targets,
+            scope_targets,
+            rel_source_text,
+            module,
+            lines,
+            raw_items,
+        )
 
     manifest = {
         "schemaVersion": 3,
@@ -426,6 +436,7 @@ def main() -> int:
         "declarations": declarations,
         "shortNames": short_names,
         "files": files,
+        "scopeTargets": scope_targets,
         "legacyTargets": legacy_targets,
     }
 

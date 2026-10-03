@@ -5,21 +5,23 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Notion Lean Link</title>
 <link rel="stylesheet" href="link.css">
-<script src="link.js" defer></script>
+<script type="module" src="link.js"></script>
 </head>
 <body>
 <main class="wrap">
   <h1>Notion Lean Link</h1>
-  <p class="lead">GitHubで対象行の行番号をクリックし、行番号付きURLを貼り付けます。Viewer v2 の安定した宣言URLへ変換します。</p>
+  <p class="lead">GitHubで対象行の行番号をクリックし、行番号付きURLを貼り付けます。定理・定義・section・namespace・選択したLean項目から、Notion Viewerに表示する範囲を選べます。</p>
   <section class="card">
     <label for="githubUrl">GitHub URL</label>
     <input id="githubUrl" placeholder="https://github.com/owner/repo/blob/.../File.lean#L120">
     <div class="buttons">
-      <button id="makeBtn" type="button">Viewer URLを生成</button>
+      <button id="makeBtn" type="button">対象を解析</button>
       <button id="clearBtn" type="button">クリア</button>
     </div>
     <div id="error" class="error"></div>
     <section id="result" class="result" hidden>
+      <div class="target-heading">表示範囲</div>
+      <div id="targetOptions" class="target-options"></div>
       <div id="meta" class="meta"></div>
       <div id="output" class="output"></div>
       <div class="buttons">
