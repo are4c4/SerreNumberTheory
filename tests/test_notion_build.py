@@ -43,6 +43,26 @@ class BuildNotionTests(unittest.TestCase):
         ]
         self.assertEqual(build.declaration_line(lines, 1, 3, "theorem"), 2)
 
+    def test_context_variables_keep_semantic_metadata(self):
+        lines = [
+            "variable (K : Type*) [Field K]",
+            "",
+            "theorem demo : True := by",
+            "  trivial",
+        ]
+        item = {
+            "startLine": 3,
+            "endLine": 4,
+            "text": "theorem demo : True := by\n  trivial\n",
+            "html": "<span>theorem</span>\n<span>trivial</span>\n",
+        }
+        variables = [{"line": 1, "text": lines[0]}]
+        context = {
+            1: '<span class="lean-token const" data-const-name="Field" data-signature="Type">Field</span>'
+        }
+        rows, _ = build.make_rows(lines, item, variables, context)
+        self.assertIn('data-const-name="Field"', rows[0]["html"])
+
     def test_semantic_rows_align_after_whitespace_normalization(self):
         lines = ["theorem demo : True := by", "  trivial"]
         item = {

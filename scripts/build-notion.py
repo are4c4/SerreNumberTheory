@@ -195,18 +195,27 @@ def semantic_line_map(lines: list[str], raw_items: list[dict]) -> dict[int, str]
     return result
 
 
-def make_rows(lines: list[str], item: dict, variables: list[dict]) -> tuple[list[dict], str]:
+def make_rows(
+    lines: list[str],
+    item: dict,
+    variables: list[dict],
+    context_semantic_by_line: dict[int, str] | None = None,
+) -> tuple[list[dict], str]:
     start = int(item.get("startLine") or 1)
     end = int(item.get("endLine") or start)
     display_start = doc_start(lines, start)
-    semantic_by_line = semantic_by_line_for_range(lines, item)
+    item_semantic_by_line = semantic_by_line_for_range(lines, item)
+    context_semantic_by_line = context_semantic_by_line or {}
 
     rows: list[dict] = []
     plain_parts: list[str] = []
     for variable in variables:
         rows.append({
             "line": variable["line"],
-            "html": html.escape(variable["text"]),
+            "html": context_semantic_by_line.get(
+                variable["line"],
+                html.escape(variable["text"]),
+            ),
             "text": variable["text"],
             "context": True,
         })
@@ -220,7 +229,7 @@ def make_rows(lines: list[str], item: dict, variables: list[dict]) -> tuple[list
         text = lines[line_no - 1] if 0 <= line_no - 1 < len(lines) else ""
         rows.append({
             "line": line_no,
-            "html": semantic_by_line.get(line_no, html.escape(text)),
+            "html": item_semantic_by_line.get(line_no, html.escape(text)),
             "text": text,
             "context": line_no < start,
         })
@@ -365,13 +374,19 @@ def main() -> int:
         lines = source_file.read_text(encoding="utf-8").splitlines()
         data = json.loads(semantic_file.read_text(encoding="utf-8"))
         raw_items = list(data.get("items", []))
+        file_semantic_by_line = semantic_line_map(lines, raw_items)
 
         for index, raw in enumerate(raw_items):
             start = int(raw.get("startLine") or 1)
             end = int(raw.get("endLine") or start)
             defines = [str(x) for x in raw.get("defines", [])]
             scopes, variables = scope_and_variables(lines, start)
-            rows, plain_text = make_rows(lines, raw, variables)
+            rows, plain_text = make_rows(
+                lines,
+                raw,
+                variables,
+                file_semantic_by_line,
+            )
             decl_line = declaration_line(lines, start, end, raw.get("displayKind"))
             item_id = f"{module}:{index}"
             item = {
