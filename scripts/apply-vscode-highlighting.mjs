@@ -372,6 +372,7 @@ async function tokenizeSourceFile(highlighter, sourcePath) {
 function allItems(manifest) {
   return [
     ...Object.values(manifest.items || {}),
+    ...Object.values(manifest.scopeTargets || {}),
     ...Object.values(manifest.legacyTargets || {}),
   ];
 }

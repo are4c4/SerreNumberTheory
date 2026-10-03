@@ -6,11 +6,21 @@ h1{font-size:22px;margin:0 0 8px}
 .lead{color:#9d9d9d;margin:0 0 22px;line-height:1.6}
 .card{background:#181818;border:1px solid #3c3c3c;border-radius:10px;padding:16px}
 label{display:block;font-size:12px;color:#9d9d9d;margin-bottom:7px}
-input{width:100%;background:#1e1e1e;color:#d4d4d4;border:1px solid #4a4a4a;border-radius:7px;padding:11px 12px;font:13px ui-monospace,SFMono-Regular,Menlo,monospace}
+input[type="text"],input:not([type]){width:100%;background:#1e1e1e;color:#d4d4d4;border:1px solid #4a4a4a;border-radius:7px;padding:11px 12px;font:13px ui-monospace,SFMono-Regular,Menlo,monospace}
+#githubUrl{width:100%;background:#1e1e1e;color:#d4d4d4;border:1px solid #4a4a4a;border-radius:7px;padding:11px 12px;font:13px ui-monospace,SFMono-Regular,Menlo,monospace}
 .buttons{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 button,a.button{border:1px solid #4a4a4a;background:#252526;color:#ddd;border-radius:7px;padding:8px 11px;font-size:12px;text-decoration:none;cursor:pointer}
 button:hover,a.button:hover{background:#2d2d30}
 .result{margin-top:18px;border-top:1px solid #333;padding-top:16px}
+.target-heading{font-size:12px;color:#bdbdbd;margin-bottom:8px}
+.target-options{display:grid;gap:7px;margin-bottom:16px}
+.target-option{display:flex;align-items:flex-start;gap:10px;margin:0;padding:10px 11px;border:1px solid #3c3c3c;border-radius:7px;background:#1e1e1e;cursor:pointer}
+.target-option:hover{background:#242424;border-color:#555}
+.target-option:has(input:checked){border-color:#6a9fd8;background:#20252a}
+.target-option input{margin-top:3px;accent-color:#6a9fd8}
+.target-option-text{display:grid;gap:3px;min-width:0}
+.target-option-text strong{font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;color:#ddd;overflow-wrap:anywhere}
+.target-option-text small{font-size:11px;color:#8f8f8f}
 .meta{font:12px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;color:#bdbdbd}
 .output{margin-top:10px;word-break:break-all;background:#1e1e1e;border:1px solid #3c3c3c;border-radius:7px;padding:10px;font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace}
 .error{margin-top:12px;color:#f48771;white-space:pre-wrap}

@@ -195,18 +195,27 @@ def semantic_line_map(lines: list[str], raw_items: list[dict]) -> dict[int, str]
     return result
 
 
-def make_rows(lines: list[str], item: dict, variables: list[dict]) -> tuple[list[dict], str]:
+def make_rows(
+    lines: list[str],
+    item: dict,
+    variables: list[dict],
+    context_semantic_by_line: dict[int, str] | None = None,
+) -> tuple[list[dict], str]:
     start = int(item.get("startLine") or 1)
     end = int(item.get("endLine") or start)
     display_start = doc_start(lines, start)
-    semantic_by_line = semantic_by_line_for_range(lines, item)
+    item_semantic_by_line = semantic_by_line_for_range(lines, item)
+    context_semantic_by_line = context_semantic_by_line or {}
 
     rows: list[dict] = []
     plain_parts: list[str] = []
     for variable in variables:
         rows.append({
             "line": variable["line"],
-            "html": html.escape(variable["text"]),
+            "html": context_semantic_by_line.get(
+                variable["line"],
+                html.escape(variable["text"]),
+            ),
             "text": variable["text"],
             "context": True,
         })
@@ -220,7 +229,7 @@ def make_rows(lines: list[str], item: dict, variables: list[dict]) -> tuple[list
         text = lines[line_no - 1] if 0 <= line_no - 1 < len(lines) else ""
         rows.append({
             "line": line_no,
-            "html": semantic_by_line.get(line_no, html.escape(text)),
+            "html": item_semantic_by_line.get(line_no, html.escape(text)),
             "text": text,
             "context": line_no < start,
         })
@@ -255,6 +264,7 @@ def legacy_key(file: str, kind: str, name: str) -> str:
 
 def add_legacy_targets(
     legacy: dict[str, dict],
+    scope_targets: dict[str, dict],
     rel_source: str,
     module: str,
     lines: list[str],
@@ -289,7 +299,7 @@ def add_legacy_targets(
             scope = stack.pop()
             rows, plain = raw_rows(lines, scope["start"], index, semantic_by_line)
             item = {
-                "id": f"legacy:{module}:{scope['kind']}:{scope['name']}:{scope['start']}",
+                "id": f"scope:{module}:{scope['kind']}:{scope['name']}:{scope['start']}",
                 "module": module,
                 "file": rel_source,
                 "kind": scope["kind"],
@@ -301,6 +311,7 @@ def add_legacy_targets(
                 "rows": rows,
                 "plainText": plain,
             }
+            scope_targets[item["id"]] = item
             legacy.setdefault(legacy_key(rel_source, scope["kind"], scope["name"]), item)
 
     for index, line in enumerate(lines, start=1):
@@ -350,6 +361,7 @@ def main() -> int:
     short_names: dict[str, list[str]] = {}
     files: dict[str, list[str]] = {}
     legacy_targets: dict[str, dict] = {}
+    scope_targets: dict[str, dict] = {}
 
     for semantic_file in sorted(semantic_root.rglob("*.json")):
         rel_source = source_path_from_semantic(semantic_file, semantic_root)
@@ -365,13 +377,19 @@ def main() -> int:
         lines = source_file.read_text(encoding="utf-8").splitlines()
         data = json.loads(semantic_file.read_text(encoding="utf-8"))
         raw_items = list(data.get("items", []))
+        file_semantic_by_line = semantic_line_map(lines, raw_items)
 
         for index, raw in enumerate(raw_items):
             start = int(raw.get("startLine") or 1)
             end = int(raw.get("endLine") or start)
             defines = [str(x) for x in raw.get("defines", [])]
             scopes, variables = scope_and_variables(lines, start)
-            rows, plain_text = make_rows(lines, raw, variables)
+            rows, plain_text = make_rows(
+                lines,
+                raw,
+                variables,
+                file_semantic_by_line,
+            )
             decl_line = declaration_line(lines, start, end, raw.get("displayKind"))
             item_id = f"{module}:{index}"
             item = {
@@ -396,7 +414,14 @@ def main() -> int:
                 declarations[name] = item_id
                 short_names.setdefault(name.rsplit(".", 1)[-1], []).append(item_id)
 
-        add_legacy_targets(legacy_targets, rel_source_text, module, lines, raw_items)
+        add_legacy_targets(
+            legacy_targets,
+            scope_targets,
+            rel_source_text,
+            module,
+            lines,
+            raw_items,
+        )
 
     manifest = {
         "schemaVersion": 3,
@@ -411,6 +436,7 @@ def main() -> int:
         "declarations": declarations,
         "shortNames": short_names,
         "files": files,
+        "scopeTargets": scope_targets,
         "legacyTargets": legacy_targets,
     }
 

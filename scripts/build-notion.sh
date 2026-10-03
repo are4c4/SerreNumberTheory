@@ -50,6 +50,7 @@ data = json.loads(p.read_text())
 assert data["schemaVersion"] == 3
 assert data["items"], "manifest contains no Lean items"
 assert data["declarations"], "manifest contains no declarations"
+assert "scopeTargets" in data, "section/namespace scope targets are missing"
 assert "legacyTargets" in data, "legacy URL compatibility data is missing"
 assert data.get("highlighting", {}).get("engine") == "vscode-textmate", "VS Code TextMate highlighting metadata is missing"
 assert data.get("highlighting", {}).get("semanticOverlay") == "SubVerso", "SubVerso semantic overlay metadata is missing"

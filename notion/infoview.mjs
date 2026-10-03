@@ -31,7 +31,7 @@ if (viewer) {
   panel.append(head, body);
   close.addEventListener("click", () => { panel.hidden = true; });
 
-  const selector = '.lean-token[data-signature],.lean-token[data-docs],.lean-token[data-const-name]';
+  const selector = '.lean-token[data-signature],.lean-token[data-docs],.lean-token[data-const-name],.lean-token[data-syntax-name],.lean-token[data-semantic="sort"]';
   const tacticSelector = '.lean-token.keyword[data-syntax-name^="Lean.Parser.Tactic."],.lean-token.keyword[data-syntax-name="Lean.Parser.Term.byTactic"]';
 
   function label(text) {

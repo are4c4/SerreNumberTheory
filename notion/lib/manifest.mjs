@@ -4,14 +4,77 @@ function param(params, name) {
   return value == null ? null : String(value);
 }
 
+function spanSize(item) {
+  return Number(item?.endLine || 0) - Number(item?.startLine || 0);
+}
+
+function containingItems(manifest, file, line) {
+  const ids = manifest.files?.[file] || [];
+  return ids
+    .map(id => manifest.items?.[id])
+    .filter(item => item && item.startLine <= line && line <= item.endLine)
+    .sort((a, b) => spanSize(a) - spanSize(b));
+}
+
 export function itemAtLine(manifest, file, line) {
   const ids = manifest.files?.[file] || [];
   const candidates = ids.map(id => manifest.items?.[id]).filter(Boolean);
   const containing = candidates.filter(item => item.startLine <= line && line <= item.endLine)
-    .sort((a, b) => (a.endLine - a.startLine) - (b.endLine - b.startLine))[0];
+    .sort((a, b) => spanSize(a) - spanSize(b))[0];
   if (containing) return containing;
   return candidates.filter(item => item.startLine <= line)
     .sort((a, b) => b.startLine - a.startLine)[0] || null;
+}
+
+export function scopeTargetsAtLine(manifest, file, line) {
+  return Object.values(manifest.scopeTargets || {})
+    .filter(item =>
+      item?.file === file &&
+      item.startLine <= line &&
+      line <= item.endLine
+    )
+    .sort((a, b) => spanSize(a) - spanSize(b));
+}
+
+export function candidateTargetsAtLine(manifest, file, line) {
+  const declarations = containingItems(manifest, file, line)
+    .filter(item => item.primaryDeclaration);
+  return {
+    declarations,
+    scopes: scopeTargetsAtLine(manifest, file, line),
+    item: itemAtLine(manifest, file, line),
+  };
+}
+
+function resolveScopeTarget(manifest, kind, name, file, line) {
+  let candidates = Object.values(manifest.scopeTargets || {})
+    .filter(item =>
+      item?.kind === kind &&
+      item?.primaryDeclaration === name &&
+      (!file || item.file === file)
+    );
+
+  if (Number.isInteger(line) && line > 0 && candidates.length > 1) {
+    const exact = candidates.filter(item => item.startLine === line);
+    if (exact.length === 1) return exact[0];
+    const containing = candidates.filter(item => item.startLine <= line && line <= item.endLine);
+    if (containing.length === 1) return containing[0];
+  }
+
+  if (candidates.length === 1) return candidates[0];
+
+  const suffix = "\u001f" + kind + "\u001f" + name;
+  candidates = Object.entries(manifest.legacyTargets || {})
+    .filter(([key, item]) => key.endsWith(suffix) && (!file || item.file === file))
+    .map(([, item]) => item);
+
+  if (Number.isInteger(line) && line > 0 && candidates.length > 1) {
+    const exact = candidates.filter(item => item.startLine === line);
+    if (exact.length === 1) return exact[0];
+  }
+  if (candidates.length === 1) return candidates[0];
+  if (!candidates.length) throw new Error(kind + ' "' + name + '" was not found.');
+  throw new Error(kind + ' "' + name + '" is ambiguous; include ?file=...&line=... in the URL.');
 }
 
 export function resolveItem(manifest, params) {
@@ -19,9 +82,12 @@ export function resolveItem(manifest, params) {
   const file = param(params, "file");
   const line = Number(param(params, "line"));
   const legacy = [["section",param(params,"section")],["namespace",param(params,"namespace")],["command",param(params,"command")]].filter(([, value]) => value);
-  if (legacy.length > 1) throw new Error("Specify only one legacy target: section, namespace, or command.");
+  if (legacy.length > 1) throw new Error("Specify only one target: section, namespace, or command.");
   if (legacy.length === 1) {
     const [kind, name] = legacy[0];
+    if (kind === "section" || kind === "namespace") {
+      return resolveScopeTarget(manifest, kind, name, file, line);
+    }
     const suffix = "\u001f" + kind + "\u001f" + name;
     const candidates = Object.entries(manifest.legacyTargets || {}).filter(([key, item]) => key.endsWith(suffix) && (!file || item.file === file)).map(([, item]) => item);
     if (candidates.length === 1) return candidates[0];
@@ -43,7 +109,7 @@ export function resolveItem(manifest, params) {
     if (item) return item;
     throw new Error("No Lean item was found near " + file + ":" + line + ".");
   }
-  throw new Error("Specify ?decl=Full.Name, ?file=...&line=..., or a legacy section/namespace/command target.");
+  throw new Error("Specify ?decl=Full.Name, ?file=...&line=..., or a section/namespace/command target.");
 }
 
 export function displayKind(item) {

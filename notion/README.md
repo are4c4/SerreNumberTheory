@@ -18,7 +18,7 @@ Lean source
                     Notion embed
 ```
 
-通常のソース色は `vscode-textmate` + `vscode-oniguruma` でビルド時に生成します。Lean の `/-- ... -/` doc comment では公式 `source.lean4.markdown` grammar も読み込み、バッククォートで囲まれた inline code などを VS Code と同じ TextMate scope で処理します。`lib/highlight.mjs` の独自 tokenizer は、生成済み HTML がない場合だけ使うフォールバックです。
+通常のソース色は `vscode-textmate` + `vscode-oniguruma` でビルド時に生成します。宣言本体だけでなく、Viewer が前置する `variable` などのコンテキスト行にも SubVerso の semantic metadata を保持するため、型・定数・変数などは hover / click で型や documentation を確認できます。Lean の `/-- ... -/` doc comment では公式 `source.lean4.markdown` grammar も読み込み、バッククォートで囲まれた inline code などを VS Code と同じ TextMate scope で処理します。`lib/highlight.mjs` の独自 tokenizer は、生成済み HTML がない場合だけ使うフォールバックです。
 
 ## URL
 
@@ -34,7 +34,9 @@ Lean source
 /notion/?file=SerreNumberTheory/Chapter01/File.lean&line=120
 ```
 
-旧Viewerとの互換性のため、`decl` の短縮名に加えて `section`、`namespace`、`command` パラメータもサポートします。
+`section` と `namespace` は Viewer の正式な表示単位として扱い、開始行から対応する `end` までをまとめて表示します。同名の scope が同じファイルに複数ある場合は `line` を併記して開始位置を特定できます。旧Viewerとの互換性のため、`decl` の短縮名と `command` パラメータも引き続きサポートします。
+
+`/notion/link/` では GitHub の行番号付き URL を貼り付けた後、定理・定義などの宣言、内側から外側の section / namespace、選択した Lean 項目から表示範囲を選んで Viewer URL を生成できます。
 
 ## 設定
 
