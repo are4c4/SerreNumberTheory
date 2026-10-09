@@ -8,10 +8,10 @@ namespace SerreNumberTheory
 
 section Characteristic
 
-variable (K : Type*) [Field K]
-variable (p : ℕ) [CharP K p]
+variable (K : Type*) [Field K] -- Kを体とする．
+variable (p : ℕ) [CharP K p] -- pをKの標数とする．
 
-include K in
+include K in -- `include` : 指定した変数を定理に含める
 /--
 体の標数は素数または `0` である．
 -/
@@ -28,7 +28,7 @@ end Characteristic
 section Frobenius
 
 variable (K : Type*) [Field K]
-variable (p : ℕ) [Fact p.Prime] [CharP K p]
+variable (p : ℕ) [Fact p.Prime] [CharP K p] -- `K` の標数は素数`p`
 
 
 /-! ## `p`乗写像 -/
@@ -36,22 +36,22 @@ variable (p : ℕ) [Fact p.Prime] [CharP K p]
 section PowerMap
 
 /--
-`p`乗写像を通常の関数として定義する。
+`p`乗写像（Frovenius写像）を通常の関数として定義する．
 -/
 def myFrobeniusFun : K → K :=
   fun x ↦ x ^ p
 
 /--
-`p`乗写像は `0` を `0` に送る。
+`p`乗写像は `0` を `0` に送る．
 -/
 theorem myFrobeniusFun_zero :
     myFrobeniusFun K p 0 = 0 := by
-  unfold myFrobeniusFun
-  exact zero_pow (expChar_ne_zero K p)
+  unfold myFrobeniusFun                 -- `myFrobeniusFun`の定義を展開
+  exact zero_pow (expChar_ne_zero K p)  -- `p` が `0` でないとき，`p^0 = 0`
 
-omit [Fact p.Prime] [CharP K p] in
+omit [Fact p.Prime] [CharP K p] in -- `omit` : 指定した変数を定理から外す
 /--
-`p`乗写像は `1` を `1` に送る。
+`p`乗写像は `1` を `1` に送る．
 -/
 theorem myFrobeniusFun_one :
     myFrobeniusFun K p 1 = 1 := by
@@ -60,7 +60,7 @@ theorem myFrobeniusFun_one :
 
 omit [Fact p.Prime] [CharP K p] in
 /--
-`p`乗写像は乗法を保つ。
+`p`乗写像は乗法を保つ．
 -/
 theorem myFrobeniusFun_mul (x y : K) :
     myFrobeniusFun K p (x * y) =
@@ -69,7 +69,7 @@ theorem myFrobeniusFun_mul (x y : K) :
   exact mul_pow x y p
 
 /--
-標数 `p` では、`p`乗写像は加法を保つ。
+標数 `p` では，`p`乗写像は加法を保つ．
 -/
 theorem myFrobeniusFun_add (x y : K) :
     myFrobeniusFun K p (x + y) =
@@ -85,9 +85,10 @@ end PowerMap
 section RingHom
 
 /--
-`x ↦ x ^ p`で与えられるFrobenius環準同型。
+`x ↦ x ^ p`で与えられるFrobenius環準同型．
+（写像`myFrobeniusFun`を準同型として定義し直す）
 -/
-def myFrobenius : K →+* K where
+def myFrobenius : K →+* K where -- `→+*` : 準同型（加法`+`と乗法`*`を保つ）
   toFun := myFrobeniusFun K p
 
   map_zero' := by
@@ -105,7 +106,8 @@ def myFrobenius : K →+* K where
     exact myFrobeniusFun_mul K p x y
 
 /--
-自作したFrobenius環準同型の値は `x ^ p` である。
+自作したFrobenius環準同型の値は `x ^ p` である．
+（`myFrobenius K p x = x ^ p`を`simp`で使えるようにする）
 -/
 @[simp]
 theorem myFrobenius_apply (x : K) :
@@ -113,11 +115,21 @@ theorem myFrobenius_apply (x : K) :
   rfl
 
 /--
-自作したFrobenius環準同型は単射である。
+体から体への環準同型は単射である．
+（Mathlibの`RingHom.injective` を体の場合に特殊化したもの）
+-/
+theorem fieldRingHom_injective
+    {K L : Type*} [Field K] [Field L]
+    (f : K →+* L) :
+    Function.Injective f := by
+  exact f.injective
+
+/--
+自作したFrobenius環準同型は単射である．
 -/
 theorem myFrobenius_injective :
-    Function.Injective (myFrobenius K p) := by
-  exact (myFrobenius K p).injective -- ?なぜ通る？
+    Function.Injective (myFrobenius K p) := by -- InfoViewの`⇑`は環準同型`K →+* K`を写像`K → K`とみるという意味
+  exact fieldRingHom_injective (myFrobenius K p)
 
 end RingHom
 
@@ -126,20 +138,21 @@ end RingHom
 section Equivalence
 
 /--
-自作したFrobenius写像の像を、型 `K^p` とみなす。
+自作したFrobenius写像の像を部分体`K^p`として取り，
+その元からなる型に名前をつけている．
 -/
-abbrev MyFrobeniusPowers : Type _ :=
+abbrev MyFrobeniusPowers : Type _ := -- `abbrev` : 長い型や式に、読みやすい短い名前をつける
   (myFrobenius K p).fieldRange
 
 /--
-Frobenius写像の終域を、その像 `K^p` に制限する。
+Frobenius写像の終域を、その像 `K^p` に制限する．
 -/
 def myFrobeniusToPowers :
     K →+* MyFrobeniusPowers K p :=
   (myFrobenius K p).rangeRestrictField
 
 /--
-像に終域を制限したFrobenius写像は全単射である。
+像に終域を制限したFrobenius写像は全単射である．
 -/
 theorem myFrobeniusToPowers_bijective :
     Function.Bijective (myFrobeniusToPowers K p) := by
@@ -152,13 +165,14 @@ theorem myFrobeniusToPowers_bijective :
 
   · -- 全射性
     intro z
-    rcases z with ⟨zValue, ⟨x, hx⟩⟩
+    rcases z with ⟨zValue, hz⟩
+    rcases hz with ⟨x, hx⟩
     refine ⟨x, ?_⟩
     apply Subtype.ext
     exact hx
 
 /--
-Frobenius写像による `K` と `K^p` の環同型。
+Frobenius写像`K → K^p`は環同型．
 -/
 noncomputable def myFrobeniusEquivPowers :
     K ≃+* MyFrobeniusPowers K p := by
@@ -186,11 +200,20 @@ theorem finiteField_char_is_prime
   · -- p=素数
     exact hp
   · -- p=0
-    exact (CharP.char_ne_zero_of_finite K p hp).elim -- elim：矛盾Falseから任意の命題を導く
+    have hp_ne_zero : p ≠ 0 := by -- 矛盾を導いて示す
+      exact CharP.char_ne_zero_of_finite K p
+    have hFalse : False := by
+      apply hp_ne_zero
+      exact hp
+    exact hFalse.elim
 
-variable (K : Type*) [Field K] [Fintype K] -- Kは有限体
-variable (p : ℕ) [Fact p.Prime] [CharP K p] --有限体Kの標数は素数p
+variable (K : Type*) [Field K] [Fintype K] -- `K`は有限体
+variable (p : ℕ) [Fact p.Prime] [CharP K p] --有限体`K`の標数は素数`p`
 
+/--
+標数 `p` の有限体 `K` に標準的な `ZMod p`-代数構造を入れる．
+これにより `K` を `ZMod p` 上のベクトル空間として扱える．
+-/
 local instance : Algebra (ZMod p) K :=
   ZMod.algebra K p
 
