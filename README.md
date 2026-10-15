@@ -25,6 +25,20 @@ S 01 01 01 FiniteFields .lean
 ```
 です．
 
+## Verso ドキュメント (Literate Documentation)
+
+[Verso ドキュメント](https://are4c4.github.io/SerreNumberTheory/) は，Lean 4 の公式ドキュメント生成ツール [Verso](https://github.com/leanprover/verso) を用いてビルドされたインタラクティブな Web ドキュメントです．
+
+- ソースコード内の型ホバー情報・定義参照
+- タクティックごとのゴール（証明状態）表示
+- 検索機能および KaTeX による数式表示
+
+ローカルでビルドする場合：
+```bash
+lake build :literateHtml
+```
+ビルド結果は `.lake/build/literate-html` に生成されます．
+
 ## Notion Viewer
 
 [Notion Viewer](https://are4c4.github.io/SerreNumberTheory/notion/) は，Lean の定理や定義を Notion 上で読みやすく表示するために作成した静的 Viewer です．
@@ -36,6 +50,7 @@ Lean のソースコードに加えて，構文ハイライト・証明状態・
 例えば，「[表示例](https://are4c4.github.io/SerreNumberTheory/notion/?decl=SerreNumberTheory.field_char_is_prime_or_zero)」のように表示できます．
 
 ## 関連リンク
+- [Verso ドキュメント (Web)](https://are4c4.github.io/SerreNumberTheory/)
 - [Notion Viewer](https://are4c4.github.io/SerreNumberTheory/notion/)
 - [Viewer URL生成](https://are4c4.github.io/SerreNumberTheory/notion/link/)
 - [GitHub Repository](https://github.com/are4c4/SerreNumberTheory)

@@ -1,0 +1,19 @@
+# Verso Literate Documentation Configuration for SerreNumberTheory
+
+landing_page = "SerreNumberTheory"
+
+[metadata]
+title = "セール『数論講義』 (Serre Number Theory)"
+description = "セール『数論講義』(A Course in Arithmetic) の Lean 4 形式化プロジェクト"
+
+order = [
+  "SerreNumberTheory",
+  "SerreNumberTheory.Chapter01.S010101FiniteFields",
+  "SerreNumberTheory.Chapter01.S010102MultiplicativeGroup",
+  "SerreNumberTheory.Chapter01.S010201PowerSums",
+  "SerreNumberTheory.Chapter01.S010202ChevalleyWarning",
+]
+
+docstrings_as_text = true
+show_docstrings = true
+show_imports = true
