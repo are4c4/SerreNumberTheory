@@ -286,46 +286,62 @@ variable (p f : ℕ) [Fact p.Prime] [CharP Ω p]
 
 /--
 標数`p`の体`Ω`において，
-`x ^ (p ^ f) = x`を満たす元全体がなす部分体．
+`x ^ (p ^ f) = x`を満たす元全体がなす集合は`Ω`の部分体になる．
 -/
 def frobeniusFixedSubfield : Subfield Ω where
-  carrier :=
-    {x : Ω | (iterateFrobenius Ω p f) x = x}
 
+  -- 部分体を構成する元の集合を定義
+  carrier := {x : Ω | (iterateFrobenius Ω p f) x = x}
+    -- interateFrobenius Ω p f : (x : Ω) ↦ (x ^ p ^ f : Ω)
+
+  -- 0を含む
   zero_mem' := by
     change (iterateFrobenius Ω p f) 0 = 0
+      -- 集合の定義を展開
     exact (iterateFrobenius Ω p f).map_zero
+      -- RingHom.map_zero : 環準同型は0を0に送る
 
+  -- 1を含む
   one_mem' := by
     change (iterateFrobenius Ω p f) 1 = 1
     exact (iterateFrobenius Ω p f).map_one
+      -- RingHom.map_one : 環準同型は1を1に送る
 
+  -- 加法について閉じている
   add_mem' := by
     intro x y hx hy
     change (iterateFrobenius Ω p f) x = x at hx
     change (iterateFrobenius Ω p f) y = y at hy
     change (iterateFrobenius Ω p f) (x + y) = x + y
     rw [(iterateFrobenius Ω p f).map_add, hx, hy]
+      -- RingHom.map_add : 環準同型は加法を保つ（f (a + b) = f a + f b）
 
+  -- 乗法について閉じている
   mul_mem' := by
     intro x y hx hy
     change (iterateFrobenius Ω p f) x = x at hx
     change (iterateFrobenius Ω p f) y = y at hy
     change (iterateFrobenius Ω p f) (x * y) = x * y
     rw [(iterateFrobenius Ω p f).map_mul, hx, hy]
+      -- RingHom.map_mul : 環準同型は乗法を保つ（f (a * b) = f a * f b）
 
+  -- 加法逆元について閉じている
   neg_mem' := by
     intro x hx
     change (iterateFrobenius Ω p f) x = x at hx
     change (iterateFrobenius Ω p f) (-x) = -x
     rw [(iterateFrobenius Ω p f).map_neg, hx]
+      -- RingHom.map_neg : f (-x) = -f x
 
+  -- 乗法逆元について閉じている
   inv_mem' := by
     intro x hx
     change (iterateFrobenius Ω p f) x = x at hx
     change (iterateFrobenius Ω p f) x⁻¹ = x⁻¹
     rw [iterateFrobenius_def] at hx ⊢
+      -- iterateFrobenius_def : (iterateFrobenius R p n) x = x ^ p ^ n
     rw [inv_pow, hx]
+      -- inv_pow : a⁻¹ ^ n = (a ^ n)⁻¹
 
 /--
 `x`が`frobeniusFixedSubfield Ω p f`に属することと，
@@ -334,11 +350,8 @@ def frobeniusFixedSubfield : Subfield Ω where
 @[simp]
 theorem mem_frobeniusFixedSubfield_iff
     (x : Ω) :
-    x ∈ frobeniusFixedSubfield Ω p f ↔
-      x ^ (p ^ f) = x := by
-  change
-    (iterateFrobenius Ω p f) x = x ↔
-      x ^ (p ^ f) = x
+    x ∈ frobeniusFixedSubfield Ω p f ↔ x ^ (p ^ f) = x := by
+  change (iterateFrobenius Ω p f) x = x ↔ x ^ (p ^ f) = x
   rw [iterateFrobenius_def]
 
 /--
@@ -348,26 +361,27 @@ theorem mem_frobeniusFixedSubfield_iff
 theorem mem_frobeniusFixedSubfield_iff_isRoot
     (x : Ω) :
     x ∈ frobeniusFixedSubfield Ω p f ↔
-      Polynomial.IsRoot
-        (Polynomial.X ^ (p ^ f) - Polynomial.X)
-        x := by
+      Polynomial.IsRoot (Polynomial.X ^ (p ^ f) - Polynomial.X) x := by
   rw [mem_frobeniusFixedSubfield_iff]
-
   change
     x ^ (p ^ f) = x ↔
-      Polynomial.eval x
-        (Polynomial.X ^ (p ^ f) - Polynomial.X) = 0
-
+    Polynomial.eval x (Polynomial.X ^ (p ^ f) - Polynomial.X) = 0
   rw [
+      -- (X^{p^f} - X)(x)
     Polynomial.eval_sub,
+      -- (X^{p^f})(x) - X(x)
     Polynomial.eval_pow,
+      -- (X(x))^{p^f} - X(x)
     Polynomial.eval_X
+      -- x^{p^f} - x
   ]
-
+  -- x ^ p ^ f = x ↔ x ^ p ^ f - x = 0
   constructor
-  · intro hx
+  · -- x ^ p ^ f = x → x ^ p ^ f - x = 0
+    intro hx
     exact sub_eq_zero.mpr hx
-  · intro hx
+  · -- x ^ p ^ f - x = 0 → x ^ p ^ f = x
+    intro hx
     exact sub_eq_zero.mp hx
 
 omit [Fact p.Prime] [CharP Ω p] in
@@ -377,9 +391,13 @@ omit [Fact p.Prime] [CharP Ω p] in
 -/
 theorem frobeniusPolynomial_splits
     [IsAlgClosed Ω] :
-    (Polynomial.X ^ (p ^ f) - Polynomial.X :
-      Polynomial Ω).Splits := by
-  exact IsAlgClosed.splits _
+      -- Ω : 代数閉体
+    (Polynomial.X ^ (p ^ f) - Polynomial.X : Polynomial Ω).Splits := by
+      -- : Polynomial Ω : Ω上の多項式であることを指定
+      -- Polynomial.Splits : その多項式が完全に分解するという命題
+  exact IsAlgClosed.splits (Polynomial.X ^ (p ^ f) - Polynomial.X : Polynomial Ω)
+      -- IsAlgClosed.splits P : 代数閉体上の多項式Pは完全に分解する
+
 
 omit [Fact p.Prime] in
 /--
@@ -388,42 +406,50 @@ omit [Fact p.Prime] in
 -/
 theorem frobeniusPolynomial_derivative
     (hf : f ≠ 0) :
-    (Polynomial.X ^ (p ^ f) - Polynomial.X :
-      Polynomial Ω).derivative = -1 := by
+    (Polynomial.X ^ (p ^ f) - Polynomial.X : Polynomial Ω).derivative = -1 := by
+      -- Polynomial.derivative : その多項式の形式的微分
 
-  -- 標数 p では，p ^ f が 0 になる
+  -- 標数pではp^fが0になる
   have hcoeff : ((p ^ f : ℕ) : Ω) = 0 := by
-    apply (CharP.cast_eq_zero_iff Ω p (p ^ f)).mpr
+    -- ((p ^ f : ℕ) : Ω) 自然数p^fを体Ωの元（pᶠ·1_Ω）として考える
+    apply (CharP.cast_eq_zero_iff Ω p (p^f)).mpr
+      -- CharP.cast_eq_zero_iff Ω p x : x = 0 ↔ p ∣ x
     exact dvd_pow_self p hf
+      -- dvd_pow_self a (n ≠ 0) : a | aⁿ
 
-  -- 微分の公式を適用する
+  -- 微分の計算
   rw [
+    -- (X^{p^f} - X)' = -1
     Polynomial.derivative_sub,
+    -- (X^{p^f})' - X' = -1
     Polynomial.derivative_X_pow,
-    Polynomial.derivative_X
+    -- {p^f}X^{p^f-1} - X' = -1
+    Polynomial.derivative_X,
+    -- {p^f}X^{p^f-1} - 1 = -1
   ]
 
   -- p ^ f = 0 を代入して整理する
   simp [hcoeff]
 
-omit [Fact p.Prime] in
+omit [Fact (Nat.Prime p)] in
 /--
 標数 `p` において，
 `X ^ (p ^ f) - X` は分離多項式である．
 -/
 theorem frobeniusPolynomial_separable
     (hf : f ≠ 0) :
-    (Polynomial.X ^ (p ^ f) - Polynomial.X :
-      Polynomial Ω).Separable := by
-
-  -- 分離性を，多項式とその導関数が互いに素であることに言い換える
+    (Polynomial.X ^ (p ^ f) - Polynomial.X : Polynomial Ω).Separable := by
+      -- Polynomial.Separable : その多項式が分離多項式
+      --  ( Mathlibでは分離多項式を，もとの多項式とその形式的微分が互いに素である多項式と定義している )
   rw [
     Polynomial.separable_def,
+      -- Polynomial.separable_def : Polynomial.Separable ↔ もとの多項式とその形式的微分が互いに素
     frobeniusPolynomial_derivative Ω p f hf
+      -- 標数 `p` の体 `Ω` において，`X ^ (p ^ f) - X` の形式的微分は `-1`
   ]
-
-  -- 任意の多項式と -1 は互いに素
   exact isCoprime_one_right.neg_right
+    -- isCoprime_one_right : 任意のxと1は互いに素
+    -- IsCoprime.neg_right : xとyが互いに素 → xと-yも互いに素
 
 omit [CharP Ω p] in
 /--
@@ -432,25 +458,39 @@ omit [CharP Ω p] in
 -/
 theorem frobeniusPolynomial_natDegree
     (hf : f ≠ 0) :
-    (Polynomial.X ^ (p ^ f) - Polynomial.X :
-      Polynomial Ω).natDegree = p ^ f := by
-  have hp_one_lt : 1 < p :=
-    (Fact.out : Nat.Prime p).one_lt
+    (Polynomial.X ^ (p ^ f) - Polynomial.X : Polynomial Ω).natDegree = p ^ f := by
+      -- Polynomial.natDegree : その多項式の次数．ただし，零多項式の次数は0とする．
 
+  -- 1 < p
+  have hp_one_lt : 1 < p := by
+    apply Nat.Prime.one_lt
+      -- Nat.Prime.one_lt : 素数は1よりも大きい
+    exact (Fact.out : Nat.Prime p)
+      -- 型クラス Fact に格納されている命題の証明を取り出す
+
+  -- 1 < p ^ f
   have hpow_one_lt : 1 < p ^ f := by
     exact Nat.one_lt_pow hf hp_one_lt
+      -- Nat.one_lt_pow : n ≠ 0, 1 < a → 1 < a ^ n
 
+  -- deg(X ^ (p ^ f) - X) = p ^ f
   calc
-    (Polynomial.X ^ (p ^ f) - Polynomial.X :
-        Polynomial Ω).natDegree
-        =
-        (Polynomial.X ^ (p ^ f) :
-          Polynomial Ω).natDegree := by
-      apply Polynomial.natDegree_sub_eq_left_of_natDegree_lt
-      simpa using hpow_one_lt
+    -- deg(X ^ (p ^ f) - X) = deg(X ^ (p ^ f))
+    (Polynomial.X ^ (p ^ f) - Polynomial.X : Polynomial Ω).natDegree
+      = (Polynomial.X ^ (p ^ f) : Polynomial Ω).natDegree := by
+        apply Polynomial.natDegree_sub_eq_left_of_natDegree_lt
+          -- q.natDegree < p.natDegree → (p - q).natDegree = p.natDegree
+        simp only [
+          Polynomial.natDegree_X,
+            -- Polynomial.X.natDegree = 1
+          Polynomial.natDegree_X_pow
+            -- (Polynomial.X ^ n).natDegree = n
+        ]
+        exact hpow_one_lt
 
+    -- deg(X ^ (p ^ f)) = p ^ f
     _ = p ^ f := by
-      exact Polynomial.natDegree_X_pow (p ^ f)
+        exact Polynomial.natDegree_X_pow (p ^ f)
 
 /--
 代数閉体`Ω`において，
@@ -460,21 +500,38 @@ theorem frobeniusPolynomial_rootSet_card
     [IsAlgClosed Ω]
     (hf : f ≠ 0) :
     Fintype.card
-      ↑((Polynomial.X ^ (p ^ f) - Polynomial.X :
-          Polynomial Ω).rootSet Ω)
+      (↑((Polynomial.X ^ (p ^ f) - Polynomial.X : Polynomial Ω).rootSet Ω) : Type u_1)
+        -- Polynomial.rootSet : 多項式の根全体からなる集合
+        -- ↑ : 根からなる集合を根からなる型に変換
       = p ^ f := by
   calc
+    -- Card((X ^ (p ^ f) - X)の根) = deg(X ^ (p ^ f) - X)
     Fintype.card
-        ↑((Polynomial.X ^ (p ^ f) - Polynomial.X :
-            Polynomial Ω).rootSet Ω)
-        =
-        (Polynomial.X ^ (p ^ f) - Polynomial.X :
-          Polynomial Ω).natDegree := by
-      apply Polynomial.card_rootSet_eq_natDegree
-      · exact frobeniusPolynomial_separable Ω p f hf
-      · simpa using frobeniusPolynomial_splits Ω p f
-    _ = p ^ f :=
-      frobeniusPolynomial_natDegree Ω p f hf
+      (↑((Polynomial.X ^ (p ^ f) - Polynomial.X : Polynomial Ω).rootSet Ω) : Type u_1)
+      = (Polynomial.X ^ (p ^ f) - Polynomial.X : Polynomial Ω).natDegree := by
+        apply Polynomial.card_rootSet_eq_natDegree
+          -- pが分離多項式，pが完全に分解する → Fintype.card ↑(p.rootSet K) = p.natDegree
+
+        · -- pが分離多項式
+          exact frobeniusPolynomial_separable Ω p f hf
+
+        · -- pが完全に分解する
+          -- 代数閉体Ω上で， X ^ (p ^ f) - Xは完全に分解する
+          have hsplit :
+              (Polynomial.X ^ (p ^ f) - Polynomial.X : Polynomial Ω).Splits := by
+            exact frobeniusPolynomial_splits Ω p f
+          -- Ω上の多項式をΩ上の多項式に送っても変わらない
+          have hmap :
+              Polynomial.map (algebraMap Ω Ω)
+                (Polynomial.X ^ (p ^ f) - Polynomial.X : Polynomial Ω)
+                = (Polynomial.X ^ (p ^ f) - Polynomial.X : Polynomial Ω) := by
+            simp
+          rw [hmap]
+          exact hsplit
+
+    -- deg(X ^ (p ^ f) - X) = p ^ f
+    _ = p ^ f := by
+      exact frobeniusPolynomial_natDegree Ω p f hf
 
 /--
 `frobeniusFixedSubfield Ω p f`の台集合は，
@@ -482,27 +539,22 @@ theorem frobeniusPolynomial_rootSet_card
 -/
 theorem frobeniusFixedSubfield_carrier_eq_rootSet
     (hf : f ≠ 0) :
-    (frobeniusFixedSubfield Ω p f : Set Ω)
-      =
-    ↑((Polynomial.X ^ (p ^ f) - Polynomial.X :
-        Polynomial Ω).rootSet Ω) := by
-  let P : Polynomial Ω :=
-    Polynomial.X ^ (p ^ f) - Polynomial.X
+    (frobeniusFixedSubfield Ω p f).carrier
+      = ((Polynomial.X ^ (p ^ f) - Polynomial.X : Polynomial Ω).rootSet Ω) := by
+        -- : .carrier : 台集合を取り出す
+  let P : Polynomial Ω := Polynomial.X ^ (p ^ f) - Polynomial.X
 
+  -- Pは0ではない
   have hP_ne : P ≠ 0 := by
-    simpa [P] using
-      (frobeniusPolynomial_separable Ω p f hf).ne_zero
+    change (Polynomial.X ^ (p ^ f) - Polynomial.X : Polynomial Ω) ≠ 0
+    exact (frobeniusPolynomial_separable Ω p f hf).ne_zero
+      -- Polynomial.Separable.ne_zero : 分離多項式は0ではない
 
   ext x
-
-  change
-    (x ∈ frobeniusFixedSubfield Ω p f) ↔
-      x ∈ P.rootSet Ω
-
+  change (x ∈ frobeniusFixedSubfield Ω p f) ↔ x ∈ P.rootSet Ω
   rw [Polynomial.mem_rootSet_of_ne hP_ne]
-
-  simpa [P, Polynomial.IsRoot] using
-    (mem_frobeniusFixedSubfield_iff_isRoot Ω p f x)
+    -- a ∈ p.rootSet S ↔ p(a) = 0
+  simpa [P, Polynomial.IsRoot] using (mem_frobeniusFixedSubfield_iff_isRoot Ω p f x)
 
 /--
 代数閉体`Ω`の部分体`frobeniusFixedSubfield Ω p f`は，
@@ -512,21 +564,19 @@ theorem frobeniusFixedSubfield_natCard
     [IsAlgClosed Ω]
     (hf : f ≠ 0) :
     Nat.card (frobeniusFixedSubfield Ω p f) = p ^ f := by
-  let P : Polynomial Ω :=
-    Polynomial.X ^ (p ^ f) - Polynomial.X
+  let P : Polynomial Ω := Polynomial.X ^ (p ^ f) - Polynomial.X
 
-  let e :
-      frobeniusFixedSubfield Ω p f
-        ≃
-      ↑(P.rootSet Ω) := by
-    exact Equiv.setCongr
-      (frobeniusFixedSubfield_carrier_eq_rootSet Ω p f hf)
+  -- frobeniusFixedSubfieldとPの根全体の集合の間に全単射を構成する
+  let e : frobeniusFixedSubfield Ω p f ≃ ↑(P.rootSet Ω) := by
+    exact Equiv.setCongr (frobeniusFixedSubfield_carrier_eq_rootSet Ω p f hf)
+      -- Equiv.setCongr : 2つの集合が等しければ全単射が存在する
 
+  -- |frobeniusFixedSubfield| = p ^ f
   calc
     Nat.card (frobeniusFixedSubfield Ω p f)
-        =
-        Nat.card ↑(P.rootSet Ω) := by
+      = Nat.card ↑(P.rootSet Ω) := by
       exact Nat.card_congr e
+        -- Nat.card_congr : 全単射が存在するなら，濃度が等しい
 
     _ = Fintype.card ↑(P.rootSet Ω) := by
       exact Nat.card_eq_fintype_card
@@ -534,7 +584,6 @@ theorem frobeniusFixedSubfield_natCard
     _ = p ^ f := by
       simpa [P] using
         frobeniusPolynomial_rootSet_card Ω p f hf
-
 
 /--
 `p ^ f`個の元を持つ`Ω`の有限部分体は，
@@ -545,38 +594,31 @@ theorem subfield_le_frobeniusFixedSubfield
     [Fintype L]
     (hcard : Fintype.card L = p ^ f) :
     L ≤ frobeniusFixedSubfield Ω p f := by
+      -- ≤ : 集合の包含関係を表す
   intro x hx
-
   rw [mem_frobeniusFixedSubfield_iff]
-
   let y : L := ⟨x, hx⟩
+    -- x : Ω を y : L として扱う
 
-  have hy :
-      y ^ Fintype.card L = y := by
-
-    -- 場合①：y = 0
+  have hy : y ^ Fintype.card L = y := by
     by_cases hy0 : y = 0
-
-    · rw [hy0]
+    · -- 場合①：y = 0
+      rw [hy0]
       exact zero_pow Fintype.card_ne_zero
-
-    -- 場合②：y ≠ 0
-    · -- ラグランジュの定理より y ^ (|L| - 1) = 1
-      have hy_order :
-          y ^ (Fintype.card L - 1) = 1 := by
+    · -- 場合②：y ≠ 0
+      have hy_order : y ^ (Fintype.card L - 1) = 1 := by
         calc
           y ^ (Fintype.card L - 1)
-              =
-              (Units.mk0 y hy0 ^
-                (Fintype.card L - 1) : Lˣ).1 := by
-                  rw [Units.val_pow_eq_pow_val, Units.val_mk0]
-
-          _ = 1 := by
+              = (Units.mk0 y hy0 ^ (Fintype.card L - 1) : Lˣ).1 := by
+                -- Units.mk0 : 非零元から単元を構成する
+                -- Lˣ : 体Lの乗法群を表す型
+                -- .1 : 単元をもとの体Lの元として取り出す（Unitsの最初のFieldを取り出す）
+                rw[Units.val_pow_eq_pow_val, Units.val_mk0]
+            _ = 1 := by
                 classical
                 rw [← Fintype.card_units, pow_card_eq_one]
                 rfl
 
-      -- y ^ |L| = y ^ (|L| - 1) * y = y
       rw [
         ← Nat.succ_pred_eq_of_pos Fintype.card_pos,
         pow_succ,
@@ -585,8 +627,7 @@ theorem subfield_le_frobeniusFixedSubfield
         one_mul
       ]
 
-  have hyΩ :
-      (y : Ω) ^ Fintype.card L = (y : Ω) := by
+  have hyΩ : (y : Ω) ^ Fintype.card L = (y : Ω) := by
     exact congrArg ((↑) : L → Ω) hy
 
   simpa [y, hcard] using hyΩ
@@ -606,11 +647,8 @@ theorem subfield_eq_frobeniusFixedSubfield
 
   apply Set.Finite.eq_of_subset_of_card_le
 
-  · rw [
-      frobeniusFixedSubfield_carrier_eq_rootSet
-        Ω p f hf
-    ]
-
+  · change (frobeniusFixedSubfield Ω p f).carrier.Finite
+    rw [frobeniusFixedSubfield_carrier_eq_rootSet Ω p f hf]
     exact
       (Polynomial.X ^ (p ^ f) - Polynomial.X :
         Polynomial Ω).rootSet_finite Ω
