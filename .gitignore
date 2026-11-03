@@ -6,3 +6,5 @@ _out/
 .env.local
 .env.*.local
 node_modules/
+__pycache__/
+*.pyc
