@@ -500,14 +500,14 @@ theorem frobeniusPolynomial_rootSet_card
     [IsAlgClosed Ω]
     (hf : f ≠ 0) :
     Fintype.card
-      (↑((Polynomial.X ^ (p ^ f) - Polynomial.X : Polynomial Ω).rootSet Ω) : Type u_1)
+      ((Polynomial.X ^ (p ^ f) - Polynomial.X : Polynomial Ω).rootSet Ω)
         -- Polynomial.rootSet : 多項式の根全体からなる集合
-        -- ↑ : 根からなる集合を根からなる型に変換
+        -- ↑ : 根からなる集合を根からなる型に変換 -- なくてもよい
       = p ^ f := by
   calc
     -- Card((X ^ (p ^ f) - X)の根) = deg(X ^ (p ^ f) - X)
     Fintype.card
-      (↑((Polynomial.X ^ (p ^ f) - Polynomial.X : Polynomial Ω).rootSet Ω) : Type u_1)
+      ((Polynomial.X ^ (p ^ f) - Polynomial.X : Polynomial Ω).rootSet Ω)
       = (Polynomial.X ^ (p ^ f) - Polynomial.X : Polynomial Ω).natDegree := by
         apply Polynomial.card_rootSet_eq_natDegree
           -- pが分離多項式，pが完全に分解する → Fintype.card ↑(p.rootSet K) = p.natDegree
@@ -586,7 +586,7 @@ theorem frobeniusFixedSubfield_natCard
         frobeniusPolynomial_rootSet_card Ω p f hf
 
 /--
-`p ^ f`個の元を持つ`Ω`の有限部分体は，
+`Ω`の有限部分体で`p ^ f`個の元を持つものは，
 `frobeniusFixedSubfield Ω p f`に含まれる．
 -/
 theorem subfield_le_frobeniusFixedSubfield
@@ -595,42 +595,62 @@ theorem subfield_le_frobeniusFixedSubfield
     (hcard : Fintype.card L = p ^ f) :
     L ≤ frobeniusFixedSubfield Ω p f := by
       -- ≤ : 集合の包含関係を表す
+      --  (Leanでは型によって≤の意味が変わる．ここでは部分体の包含関係を表している．)
   intro x hx
-  rw [mem_frobeniusFixedSubfield_iff]
+  rw[mem_frobeniusFixedSubfield_iff]
   let y : L := ⟨x, hx⟩
-    -- x : Ω を y : L として扱う
+    -- L : Subfield Ωを部分型{x : Ω // x ∈ L}として扱う
 
   have hy : y ^ Fintype.card L = y := by
     by_cases hy0 : y = 0
-    · -- 場合①：y = 0
-      rw [hy0]
-      exact zero_pow Fintype.card_ne_zero
-    · -- 場合②：y ≠ 0
+    · -- 場合①：y = 0のとき
+      rw[hy0]
+      apply zero_pow
+      exact Fintype.card_ne_zero
+        -- Fintype.card α ≠ 0
+    · -- 場合②：y ≠ 0のとき
       have hy_order : y ^ (Fintype.card L - 1) = 1 := by
         calc
           y ^ (Fintype.card L - 1)
-              = (Units.mk0 y hy0 ^ (Fintype.card L - 1) : Lˣ).1 := by
-                -- Units.mk0 : 非零元から単元を構成する
+              = (Units.mk0 y hy0 ^ (Fintype.card L - 1) : Lˣ).val := by
+                -- Units.mk0 : 非零元から単元を構成する（有限体Lの非零元を乗法群Lˣの元として扱う）
                 -- Lˣ : 体Lの乗法群を表す型
-                -- .1 : 単元をもとの体Lの元として取り出す（Unitsの最初のFieldを取り出す）
-                rw[Units.val_pow_eq_pow_val, Units.val_mk0]
+                -- .val : Lˣの項から値（型はL）を取り出す
+                rw [Units.val_pow_eq_pow_val]
+                  -- Units.val_pow_eq_pow_val : ((u : Lˣ) ^ n).val = (u.val : L) ^ n
+                  --   単元を累乗してから値を取り出しても、先に値を取り出してから累乗しても結果は同じ
+                rw [Units.val_mk0]
+                  -- Units.val_mk0 : (Units.mk0 y hy0 : Lˣ).val = (y : L)
+                  --   元の体の非零元を単元に変換してから .val で取り出すと，元の値に戻る
             _ = 1 := by
                 classical
-                rw [← Fintype.card_units, pow_card_eq_one]
+                  -- Fintype.card_unitsを使うために必要
+                  --   [DecidableEq α]で排中律を使っている
+                rw [← Fintype.card_units]
+                  -- Fintype.card αˣ = Fintype.card α - 1
+                rw [pow_card_eq_one]
+                  -- (x : G) ^ Fintype.card G = 1 （ラグランジュの定理）
                 rfl
-
       rw [
         ← Nat.succ_pred_eq_of_pos Fintype.card_pos,
+          -- Nat.succ_pred_eq_of_pos : 0 < n → n.pred.succ = n
+          --   n.predはn-1，n.succはn+1だから，n.pred.succはn-1+1
+          -- Fintype.card_pos : 0 < Fintype.card α
         pow_succ,
+          -- pow_succ : a ^ (n + 1) = a ^ n * a
         Nat.pred_eq_sub_one,
+          -- Nat.pred_eq_sub_one : n.pred = n - 1
         hy_order,
         one_mul
       ]
 
   have hyΩ : (y : Ω) ^ Fintype.card L = (y : Ω) := by
-    exact congrArg ((↑) : L → Ω) hy
-
-  simpa [y, hcard] using hyΩ
+    exact congrArg (fun z : L => (z : Ω)) hy
+      -- congrArg : a = b → f(a) = f(b)
+      -- (fun z : L => (z : Ω))はLからΩへの包含写像
+  change (y : Ω) ^ (p ^ f) = (y : Ω)
+  rw [← hcard]
+  exact hyΩ
 
 /--
 代数閉体`Ω`において，`p ^ f`個の元を持つ部分体は，
@@ -644,26 +664,33 @@ theorem subfield_eq_frobeniusFixedSubfield
     (hcard : Fintype.card L = p ^ f) :
     L = frobeniusFixedSubfield Ω p f := by
   apply SetLike.coe_injective
-
+    -- SetLike.coe_injective : 部分体の台集合同士が等しければ部分体同士も等しい
+    --   Function.Injective : ∀ x y, f x = f y → x = y
+    --   SetLike.coe : 台集合を取り出す関数
+    --   OutParam : 型クラスの探索において、どの型引数をインスタンスから決定するかを指定する仕組み
   apply Set.Finite.eq_of_subset_of_card_le
+    -- Set.Finite.eq_of_subset_of_card_le : 有限集合S,Tについて，S⊆T,|T|≤|S| → S=T
 
-  · change (frobeniusFixedSubfield Ω p f).carrier.Finite
+  · -- (frobeniusFixedSubfield Ω p f)は有限集合
+    change (frobeniusFixedSubfield Ω p f).carrier.Finite
     rw [frobeniusFixedSubfield_carrier_eq_rootSet Ω p f hf]
-    exact
-      (Polynomial.X ^ (p ^ f) - Polynomial.X :
-        Polynomial Ω).rootSet_finite Ω
+      -- frobeniusFixedSubfield Ω p fの台集合は， X ^ (p ^ f) - Xの根集合と一致する
+    exact (Polynomial.X ^ (p ^ f) - Polynomial.X : Polynomial Ω).rootSet_finite Ω
+      -- Polynomial.rootSet_finite : 体上の非零多項式の根集合は有限
 
-  · exact
-      subfield_le_frobeniusFixedSubfield
-        Ω p f L hcard
+  · -- L ⊆ (frobeniusFixedSubfield Ω p f)
+    exact subfield_le_frobeniusFixedSubfield Ω p f L hcard
 
-  · change
-      Nat.card (frobeniusFixedSubfield Ω p f) ≤
-        Nat.card L
-
+  · -- |(frobeniusFixedSubfield Ω p f)| ≤ L
+      -- 両辺は，部分体 → ↑部分体の台集合 → ↑↑部分体の台集合の元からなる部分型，と型強制される
+    change Nat.card (frobeniusFixedSubfield Ω p f) ≤ Nat.card L
     rw [
       frobeniusFixedSubfield_natCard Ω p f hf,
+        -- 代数閉体Ωの部分体(frobeniusFixedSubfield Ω p f)は， p ^ f個の元を持つ
       Nat.card_eq_fintype_card,
+        -- Nat.card_eq_fintype_card : Nat.card α = Fintype.card α
+        --   Finite α : αは有限である
+        --   Fintyoe α : αの全要素を列挙できる
       hcard
     ]
 
@@ -674,36 +701,44 @@ theorem subfield_eq_frobeniusFixedSubfield
 theorem existsUnique_subfield_natCard_eq_pow
     [IsAlgClosed Ω]
     (hf : f ≠ 0) :
-    ∃! L : Subfield Ω,
-      Nat.card L = p ^ f := by
-  refine
-    ⟨frobeniusFixedSubfield Ω p f,
+    ∃! L : Subfield Ω, Nat.card L = p ^ f := by
+      -- ∃! : ExsitsUnipueという命題を表す記法
+
+    -- 存在すること
+    refine ⟨
+      frobeniusFixedSubfield Ω p f,
+        -- 存在する部分体の具体例
       frobeniusFixedSubfield_natCard Ω p f hf,
-      ?_⟩
+        -- その部分体の位数はp^fである
+      ?_
+        -- （残りのgoal）他に条件を満たす部分体があればそれは具体例であげた部分体と等しい
+    ⟩
 
-  intro L hL
+    -- 一意性
+    intro L hL
+    have hpow_pos : 0 < p ^ f := by
+      exact pow_pos (Fact.out : Nat.Prime p).pos f
+        -- pow_pos : 0 < a → 0 < a ^ n
+        -- Nat.Prime.pos : pが素数 → 0 < p
 
-  have hpow_pos : 0 < p ^ f := by
-    exact pow_pos (Fact.out : Nat.Prime p).pos f
+    have hL_ne : Nat.card L ≠ 0 := by
+      rw [hL]
+      exact ne_of_gt hpow_pos
+        -- ne_of_gt : b < a → a ≠ b
+        -- Nat.cardは無限型に対して0を返す
 
-  have hL_ne : Nat.card L ≠ 0 := by
-    rw [hL]
-    exact ne_of_gt hpow_pos
+    letI : Finite L := by
+      exact Nat.finite_of_card_ne_zero hL_ne
+        -- Nat.finite_of_card_ne_zero : Nat.card α ≠ 0 → Finite α
 
-  letI : Finite L :=
-    Nat.finite_of_card_ne_zero hL_ne
+    letI : Fintype L := by
+      exact Fintype.ofFinite L
 
-  letI : Fintype L :=
-    Fintype.ofFinite L
+    have hcard : Fintype.card L = p ^ f := by
+      rw [← Nat.card_eq_fintype_card]
+      exact hL
 
-  have hcard :
-      Fintype.card L = p ^ f := by
-    rw [← Nat.card_eq_fintype_card]
-    exact hL
-
-  exact
-    subfield_eq_frobeniusFixedSubfield
-      Ω p f L hf hcard
+    exact subfield_eq_frobeniusFixedSubfield Ω p f L hf hcard
 
 end FiniteSubfieldInAlgebraicClosure
 
@@ -720,8 +755,7 @@ local instance : Algebra (ZMod p) K :=
   ZMod.algebra K p
 
 /--
-標数 `p` の有限体 `K` を，
-`ZMod p` の代数閉包に埋め込む．
+標数 `p` の有限体 `K` を，`ZMod p` の代数閉包に埋め込む．
 -/
 noncomputable def finiteFieldEmbeddingIntoClosure :
     K →ₐ[ZMod p] AlgebraicClosure (ZMod p) := by
@@ -739,15 +773,17 @@ noncomputable def finiteFieldEmbeddingIntoClosure :
 noncomputable def finiteFieldImageInClosure :
     Subfield (AlgebraicClosure (ZMod p)) :=
   (finiteFieldEmbeddingIntoClosure K p).toRingHom.fieldRange
+    -- AlgHom.toRingHom : 代数準同型は環準同型
+    -- RingHom.fieldRange : 環準同型の像を部分体として取り出す
 
 /--
-`K` を代数閉包に埋め込んだ像の位数は，
-元の有限体 `K` の位数 `p ^ f` に等しい．
+`K` を代数閉包に埋め込んだ像の位数は，元の有限体 `K` の位数 `p ^ f` に等しい．
 -/
 theorem finiteFieldImageInClosure_natCard
     (hcard : Fintype.card K = p ^ f) :
     Nat.card (finiteFieldImageInClosure K p) = p ^ f := by
 
+  -- φ : K から ((ZMod p)の代数閉包) への環準同型
   let φ : K →+* AlgebraicClosure (ZMod p) :=
     (finiteFieldEmbeddingIntoClosure K p).toRingHom
 
@@ -757,8 +793,11 @@ theorem finiteFieldImageInClosure_natCard
             rfl
 
     _ = Nat.card K := by
-          exact Nat.card_congr
-            (φ.rangeRestrictFieldEquiv.symm.toEquiv)
+          exact Nat.card_congr (φ.rangeRestrictFieldEquiv.symm.toEquiv)
+            -- RingHom.rangeRestrictFieldEquiv : 体から環準同型の像への体同型を構成
+            -- RingEquiv.symm : 環同型の逆写像を環同型として構成
+            -- RingEquiv.toEquiv : 環同型は全単射
+            -- Nat.card_congr : 全単射があれば濃度が等しい
 
     _ = Fintype.card K := by
           exact Nat.card_eq_fintype_card
@@ -774,40 +813,34 @@ theorem finiteFieldImage_eq_frobeniusFixedSubfield
     (hf : f ≠ 0)
     (hcard : Fintype.card K = p ^ f) :
     finiteFieldImageInClosure K p =
-      frobeniusFixedSubfield
-        (AlgebraicClosure (ZMod p)) p f := by
+      frobeniusFixedSubfield (AlgebraicClosure (ZMod p)) p f := by
 
-  -- 定理1 (ii)：位数 p ^ f の部分体は一意に存在する
   obtain ⟨L, _, hUnique⟩ :=
-    existsUnique_subfield_natCard_eq_pow
-      (AlgebraicClosure (ZMod p)) p f hf
+    existsUnique_subfield_natCard_eq_pow (AlgebraicClosure (ZMod p)) p f hf
+      -- L : 存在する部分体
+      -- hUnique : 一意性の証明
 
   -- 埋め込んだ像の位数は p ^ f
-  have hImage :
-      Nat.card (finiteFieldImageInClosure K p) = p ^ f := by
+  have hImage : Nat.card (finiteFieldImageInClosure K p) = p ^ f := by
     exact finiteFieldImageInClosure_natCard K p f hcard
 
   -- Frobenius固定部分体の位数も p ^ f
   have hFixed :
-      Nat.card
-        (frobeniusFixedSubfield
-          (AlgebraicClosure (ZMod p)) p f) = p ^ f := by
-    exact frobeniusFixedSubfield_natCard
-      (AlgebraicClosure (ZMod p)) p f hf
+      Nat.card (frobeniusFixedSubfield (AlgebraicClosure (ZMod p)) p f) = p ^ f := by
+    exact frobeniusFixedSubfield_natCard (AlgebraicClosure (ZMod p)) p f hf
 
   -- 一意性から両者は等しい
   calc
     finiteFieldImageInClosure K p
-        = L := by
-          exact hUnique _ hImage
+      = L := by
+        exact hUnique (finiteFieldImageInClosure K p) hImage
 
-    _ = frobeniusFixedSubfield
-          (AlgebraicClosure (ZMod p)) p f := by
-          exact (hUnique _ hFixed).symm
+    _ = frobeniusFixedSubfield (AlgebraicClosure (ZMod p)) p f := by
+        exact (hUnique (frobeniusFixedSubfield (AlgebraicClosure (ZMod p)) p f) hFixed).symm
 
 /--
 位数が `p ^ f` の有限体 `K` は，
-代数閉包内の `frobeniusFixedSubfield` と環同型である．
+代数閉包内の `frobeniusFixedSubfield` と体同型（環同型）である．
 -/
 noncomputable def finiteFieldRingEquivFixedSubfield
     (hf : f ≠ 0)
@@ -821,42 +854,39 @@ noncomputable def finiteFieldRingEquivFixedSubfield
 
   -- その像は Frobenius 固定部分体に等しい
   have hImage :
-      φ.fieldRange =
-        frobeniusFixedSubfield
-          (AlgebraicClosure (ZMod p)) p f := by
-    exact finiteFieldImage_eq_frobeniusFixedSubfield
-      K p f hf hcard
+      φ.fieldRange = frobeniusFixedSubfield (AlgebraicClosure (ZMod p)) p f := by
+    exact finiteFieldImage_eq_frobeniusFixedSubfield K p f hf hcard
 
   -- K ≃ φ(K) と φ(K) = F_q を組み合わせる
-  exact
-    φ.rangeRestrictFieldEquiv.trans
-      (RingEquiv.subfieldCongr hImage)
+  exact φ.rangeRestrictFieldEquiv.trans (RingEquiv.subfieldCongr hImage)
+    -- RingHom.rangeRestrictFieldEquiv : 環準同型の終域を像に制限すると環同型ができる
+    -- RingEquiv.subfieldCongr : S = T ならば，SとTは同型
 
 omit [Fact (Nat.Prime p)] [CharP K p] in
 /--
-位数が `p ^ f` である有限体では，
-指数 `f` は `0` ではない．
+位数が `p ^ f` である有限体では，指数 `f` は `0` ではない．
 -/
 theorem finiteField_pow_exponent_ne_zero
-    (hcard : Fintype.card K = p ^ f) :
-    f ≠ 0 := by
+    (hcard : Fintype.card K = p ^ f) : f ≠ 0 := by
 
   intro hf
 
   -- f = 0 ならば，K の位数は高々 1
   have hcard_le_one : Fintype.card K ≤ 1 := by
-    simpa [hf] using hcard.le
+    rw [hf, pow_zero] at hcard
+    exact hcard.le
 
   -- しかし，体には 0 と 1 という異なる元が存在する
   have hsub : Subsingleton K :=
+      -- Subsingleton : 任意の2つの元が等しい
     Fintype.card_le_one_iff_subsingleton.mp hcard_le_one
+      -- Fintype.card_le_one_iff_subsingleton : 位数が1以下 ↔ 任意の2元が等しい
 
   exact not_subsingleton K hsub
-
+    -- not_subsingleton : 元が少なくとも2つある型はSubsingletonではない
 
 /--
-標数 `p` で，ともに `p ^ f` 個の元を持つ
-2つの有限体 `K`, `L` は環同型である．
+標数 `p` で，ともに `p ^ f` 個の元を持つ2つの有限体 `K`, `L` は環同型である．
 -/
 noncomputable def finiteFieldsRingEquiv
     (L : Type*) [Field L] [Fintype L] [CharP L p]
@@ -865,8 +895,7 @@ noncomputable def finiteFieldsRingEquiv
     K ≃+* L := by
 
   -- L に ZMod p 上の代数構造を入れる
-  letI : Algebra (ZMod p) L :=
-    ZMod.algebra L p
+  letI : Algebra (ZMod p) L := ZMod.algebra L p
 
   -- 位数の仮定から f ≠ 0 を導く
   have hf : f ≠ 0 :=
