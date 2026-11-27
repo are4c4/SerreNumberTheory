@@ -20,36 +20,70 @@ Serre の証明と Notion のメモに合わせ，次の順で形式化する．
 基本的な群論・有限集合の定理は Mathlib から引用する．
 -/
 
-/-! ## 生成部分群と元の位数 -/
+/-!
+## 生成部分群と元の位数
+-/
 
 section GeneratedSubgroup
 
+-- H を有限群とする
 variable (H : Type*) [Group H] [Fintype H]
 
-/-- 元 x が生成する部分群の位数は x の位数に等しい． -/
+/--
+元 x が生成する部分群の位数は x の位数に等しい．
+（mathlibの定理をほぼそのまま使用）
+（後で使いやすいようにFintype.cardからNat.cardに変換）
+-/
 theorem zpowers_card (x : H) :
     Nat.card (Subgroup.zpowers x) = orderOf x := by
+      -- Subgroup.zpowers x : 元xによって生成される部分群 { xᵏ | k ∈ ℤ }
+        -- zpowersのzは整数，powersは累乗を意味する
+      -- orderOf x : 元xの位数
   rw [Nat.card_eq_fintype_card]
+    --  Nat.card_eq_fintype_card : Nat.card α = Fintype.card α
   exact Fintype.card_zpowers
+    -- Fintype.card_zpowers : 元 x が生成する部分群の位数は x の位数に等しい
 
-/-- 位数 n の群で，位数 n の元があればその元は生成元である． -/
+/--
+位数 n の群で，位数 n の元があればその元は生成元である．
+-/
 theorem zpowers_eq_top_of_orderOf_eq_card
     (x : H) (hx : orderOf x = Fintype.card H) :
-    Subgroup.zpowers x = ⊤ := by
-  -- <x> ⊆ H かつ |H| ≤ |<x>| だから等しい．
+    Subgroup.zpowers x = (⊤ : Subgroup H) := by
+      -- (⊤ : Subgroup H) : Hの部分群全体の順序集合の最大元
+        -- ここでは包含関係を順序としているので，最大元はH自身となる
+        -- (Subgroup.zpowers x : Subgroup H)と型を合わせるために，Hではなく⊤を使う
   apply Subgroup.eq_top_of_le_card
+    -- Subgroup.eq_top_of_le_card : 有限群Hの部分群Cに対して，|H| ≤ |C| => C = H
   rw [zpowers_card H x, hx, Nat.card_eq_fintype_card]
 
-/-- x^d = 1 ならば <x> の任意の元も d 乗して 1 になる． -/
+/--
+x^d = 1 ならば <x> の任意の元も d 乗して 1 になる．
+-/
 theorem pow_eq_one_of_mem_zpowers
-    (x y : H) (d : ℕ) (hx : x ^ d = 1)
-    (hy : y ∈ Subgroup.zpowers x) :
+    (x y : H) (d : ℕ) (hx : x ^ d = 1) (hy : y ∈ Subgroup.zpowers x) :
     y ^ d = 1 := by
-  -- 有限群では <x> の任意の元は自然数乗として書ける．
-  obtain ⟨k, hk⟩ := (mem_powers_iff_mem_zpowers.mpr hy)
-  -- hk のラムダ式 (fun i => x ^ i) k を x ^ k に展開する．
+  obtain ⟨k, hk⟩ := mem_powers_iff_mem_zpowers.mpr hy
+    -- mem_powers_iff_mem_zpowers : y ∈ Submonoid.powers x ↔ y ∈ zpowers x
+      -- Submonoid.powers x : xの非負整数乗全体
+      -- Subgroup.zpowers x : xの整数乗全体
+    -- obtain : 存在命題から k : ℕ , hk : xᵏ = y を取り出す
   change x ^ k = y at hk
-  rw [← hk, ← pow_mul, Nat.mul_comm k d, pow_mul, hx, one_pow]
+    -- hk : (fun i => x ^ i) k = y → hk : x ^ k = y に書き換える
+  calc
+    y ^ d
+      = (x ^ k) ^ d := by
+          rw [← hk]
+    _ = x ^ (k * d) := by
+          rw [pow_mul]
+    _ = x ^ (d * k) := by
+          rw [Nat.mul_comm k d]
+    _ = (x ^ d) ^ k := by
+          rw [pow_mul]
+    _ = (1 : H) ^ k := by
+          rw [hx]
+    _ = 1 := by
+          exact one_pow k
 
 end GeneratedSubgroup
 
@@ -57,27 +91,44 @@ end GeneratedSubgroup
 
 section CyclicSubgroups
 
+-- G を有限巡回群とする
 variable (G : Type*) [Group G] [Fintype G] [IsCyclic G]
+  -- [IsCyclic G] : Gを巡回群とする
 
-/-- 位数 n の巡回群の生成元 g について，g^(n/d) の位数は d である． -/
+omit [IsCyclic G] in
+/--
+位数 n の巡回群の生成元 g について，g^(n/d) の位数は d である．
+-/
 theorem orderOf_pow_div
-    (g : G) (hg : orderOf g = Fintype.card G)
-    (d : ℕ) (hd : d ∣ Fintype.card G) :
+    (g : G) (hg : orderOf g = Fintype.card G) (d : ℕ) (hd : d ∣ Fintype.card G) :
     orderOf (g ^ (Fintype.card G / d)) = d := by
   let n := Fintype.card G
   let q := n / d
-  have hn : 0 < n := Fintype.card_pos
-  have hgn : orderOf g = n := hg
-  have hqd : q * d = n := Nat.div_mul_cancel hd
-  have hqpos : 0 < q := Nat.pos_of_dvd_of_pos (Nat.div_dvd_of_dvd hd) hn
+  have hn : 0 < n := by
+    exact Fintype.card_pos
+      -- Fintype.card_pos : 0 < Fintype.card α
+  have hgn : orderOf g = n := by
+    exact hg
+  have hqd : q * d = n := by
+    exact Nat.div_mul_cancel hd
+  have hq_dvd : q ∣ n := by
+    exact Nat.div_dvd_of_dvd hd
+      -- Nat.div_dvd_of_dvd : n ∣ m => m / n ∣ m
+        -- ここでは，d ∣ n → (n / d) ∣ n
+  have hqpos : 0 < q := by
+    exact Nat.pos_of_dvd_of_pos hq_dvd hn
+      -- Nat.pos_of_dvd_of_pos : m n : ℕ, m ∣ n, 0 < n => 0 < m
 
-  -- 【ord(g^q) | d】(g^q)^d = g^n = 1．
+  -- 【ord(g^q) | d】(g^q)^d = g^n = 1
   have hpow : (g ^ q) ^ d = 1 := by
     rw [← pow_mul, hqd, ← hgn]
     exact pow_orderOf_eq_one g
-  have h₁ : orderOf (g ^ q) ∣ d := orderOf_dvd_iff_pow_eq_one.mpr hpow
+      -- pow_orderOf_eq_one x : x ^ orderOf x = 1
+  have h₁ : orderOf (g ^ q) ∣ d := by
+    exact orderOf_dvd_iff_pow_eq_one.mpr hpow
+      -- orderOf_dvd_iff_pow_eq_one : orderOf x ∣ n ↔ x ^ n = 1
 
-  -- 【d | ord(g^q)】m := ord(g^q) とおくと g^(qm) = 1．
+  -- 【d | ord(g^q)】m := ord(g^q) とおくと g^(qm) = 1
   let m := orderOf (g ^ q)
   have hgm : g ^ (q * m) = 1 := by
     rw [pow_mul]
@@ -85,33 +136,46 @@ theorem orderOf_pow_div
   have hnDiv : n ∣ q * m := by
     rw [← hgn]
     exact orderOf_dvd_iff_pow_eq_one.mpr hgm
-  -- n = q*d なので，q>0 を用いて q を約分する．
+  -- n = q*d なので，q>0 を用いて q を約分する
   have h₂ : d ∣ m := by
     apply Nat.dvd_of_mul_dvd_mul_right hqpos
+      -- Nat.dvd_of_mul_dvd_mul_right : 0 < k, m * k ∣ n * k => m ∣ n
     rw [Nat.mul_comm d q, hqd, Nat.mul_comm m q]
     exact hnDiv
 
-  -- 両方向の整除より ord(g^q) = d．
+  -- 【ord(g^q) | d】かつ【d | ord(g^q)】だから ord(g^q) = d．
   exact Nat.dvd_antisymm h₁ h₂
+    -- Nat.dvd_antisymm : m ∣ n, n ∣ m => m = n
 
-/-- G = <g> のとき，d 乗して 1 になる元は <g^(n/d)> に属する． -/
+omit [IsCyclic G] in
+/--
+G = <g> のとき，d 乗して 1 になる元は <g^(n/d)> に属する．
+-/
 theorem mem_cyclicSubgroup_of_pow_eq_one
     (g : G) (hg : ∀ y : G, y ∈ Subgroup.zpowers g)
     (d : ℕ) (hd : d ∣ Fintype.card G)
     (y : G) (hy : y ^ d = 1) :
     y ∈ Subgroup.zpowers (g ^ (Fintype.card G / d)) := by
   let n := Fintype.card G
-  have hn : 0 < n := Fintype.card_pos
-  have hdpos : 0 < d := Nat.pos_of_dvd_of_pos hd hn
+  have hn : 0 < n := by
+    exact Fintype.card_pos
+  have hdpos : 0 < d := by
+    exact Nat.pos_of_dvd_of_pos hd hn
   have hgord : orderOf g = n := by
     calc
-      orderOf g = Nat.card G := orderOf_eq_card_of_forall_mem_zpowers hg
-      _ = n := Nat.card_eq_fintype_card
+      orderOf g
+        = Nat.card G := by
+          exact orderOf_eq_card_of_forall_mem_zpowers hg
+            -- orderOf_eq_card_of_forall_mem_zpowers : 有限群の生成元の位数は、群の位数に等しい
+      _ = n := by
+          exact Nat.card_eq_fintype_card
 
-  -- G は巡回群なので y = g^k と書ける．
+  -- G は巡回群なので，ある k が存在して y = g^k と書ける．
   obtain ⟨k, hk⟩ := (mem_powers_iff_mem_zpowers.mpr (hg y))
+
   -- hk の形を (fun i => g ^ i) k = y から g ^ k = y に直す．
   change g ^ k = y at hk
+
   -- g^(kd) = 1 から n | kd を得る．
   have hpow : g ^ (k * d) = 1 := by
     rw [pow_mul, hk]
@@ -119,24 +183,34 @@ theorem mem_cyclicSubgroup_of_pow_eq_one
   have hdiv : n ∣ k * d := by
     rw [← hgord]
     exact orderOf_dvd_iff_pow_eq_one.mpr hpow
+      -- orderOf_dvd_iff_pow_eq_one : (orderOf x) ∣ n ↔ x ^ n = 1
 
   -- n = (n/d)d なので d を約分すると (n/d) | k．
-  have hnd : n / d * d = n := Nat.div_mul_cancel hd
+  have hnd : n / d * d = n := by
+    exact Nat.div_mul_cancel hd
   have hqdiv : n / d ∣ k := by
     apply Nat.dvd_of_mul_dvd_mul_right hdpos
     rw [hnd]
     exact hdiv
+
+  -- n / d ∣ k だから，ある l が存在して，k = (n/d)^l と表せる．
   obtain ⟨l, hl⟩ := hqdiv
-  -- y = g^k = (g^(n/d))^l．
+
   have hyEq : y = (g ^ (n / d)) ^ l := by
     calc
-      y = g ^ k := hk.symm
-      _ = g ^ ((n / d) * l) := by rw [hl]
-      _ = (g ^ (n / d)) ^ l := pow_mul g (n / d) l
+      y = g ^ k := by
+        exact hk.symm
+      _ = g ^ ((n / d) * l) := by
+          rw [hl]
+      _ = (g ^ (n / d)) ^ l := by
+          exact pow_mul g (n / d) l
   rw [hyEq]
   exact Subgroup.npow_mem_zpowers _ _
+    -- Subgroup.npow_mem_zpowers : 群の元 x の任意の自然数乗は、x が生成する部分群に属する
 
-/-- 位数 n の巡回群には，各 d | n に対して位数 d の部分群がただ一つ存在する． -/
+/--
+位数 n の巡回群には，各 d | n に対して位数 d の部分群がただ一つ存在する．
+-/
 theorem cyclic_subgroup_existsUnique
     (d : ℕ) (hd : d ∣ Fintype.card G) :
     ∃! C : Subgroup G, Nat.card C = d := by
